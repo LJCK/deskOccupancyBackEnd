@@ -28,3 +28,5 @@ app.use(cors(corsOptions))
 app.get('/',(req,res)=>{
     res.send("Welcome to backend");
   })
+
+app.use('/addTables',)
