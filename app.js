@@ -1,8 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose')
 const morgan = require('morgan')
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser')
+const deskRoutes = require('./routes/deskRoutes')
 var cors = require('cors')
+
+
 const app = express();
 const PORT = 3001;
   
@@ -25,8 +28,5 @@ app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })) // for parsing application
 app.use(cors(corsOptions))
 
-app.get('/',(req,res)=>{
-    res.send("Welcome to backend");
-  })
 
-app.use('/addTables',)
+app.use('/',deskRoutes)
