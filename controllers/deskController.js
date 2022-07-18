@@ -10,10 +10,13 @@ const get_desk_status=async(req,res)=>{
     console.log(expiry_time)
     occupancy_status={}
     if(floor.desks[desk_id]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
+      occupancy_status["id"]=desk_id
       occupancy_status[desk_id]='unoccupied'
+      occupancy_status['expiryTime']= null
       
     }else{
       occupancy_status[desk_id]='occupied'
+      occupancy_status['expiryTime']= floor.desks[desk_id]["expiryTime"]
     }
     occupancy_array.push(occupancy_status)
   }
