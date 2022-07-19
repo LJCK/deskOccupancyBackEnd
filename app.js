@@ -3,6 +3,9 @@ const mongoose = require('mongoose')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const deskRoutes = require('./routes/deskRoutes')
+const floorPlanRoutes = require('./routes/floorPlanRoutes')
+
+const Grid = require('gridfs-stream');
 var cors = require('cors')
 
 
@@ -17,8 +20,13 @@ var corsOptions = {
 //connect to mongodb
 const dbURI = 'mongodb+srv://zhiheng:zhiheng@cluster0.s7nla.mongodb.net/?retryWrites=true&w=majority'
 // const dbURI = 'mongodb+srv://qinxiang:qinxiang@cluster0.ojjsesl.mongodb.net/?retryWrites=true&w=majority'
+let gfs
 mongoose.connect(dbURI, {useNewUrlParser: true, useUnifiedTopology: true }) //its an async task, returns something like a promise
-        .then(result => app.listen(PORT, () => console.log('connected to db, server started')))
+        .then(result => {
+            app.listen(PORT, () => console.log('connected to db, server started'))
+            gfs = Grid(mongoose.connection.db, mongoose.mongo);
+            gfs.collection('uploads');
+        })
         .catch(err => console.log(err));
 
 app.use(express.static('public'));
@@ -28,5 +36,10 @@ app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })) // for parsing application
 app.use(cors(corsOptions))
 
+app.get('/', (req,res)=>{
+    res.send("Welcome to backend");
+  })
+app.use('/desk',deskRoutes)
+app.use('/floorPlan',floorPlanRoutes)
 
-app.use('/',deskRoutes)
+module.exports=gfs
