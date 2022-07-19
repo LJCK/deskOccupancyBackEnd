@@ -7,7 +7,6 @@ const get_desk_status=async(req,res)=>{
   occupancy_array=[]
   for(let desk_id in floor.desks){
     let expiry_time = moment(floor.desks[desk_id]["expiryTime"],"hh:mm:ss");
-    console.log(expiry_time)
     occupancy_status={}
     if(floor.desks[desk_id]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
       occupancy_status["id"]=desk_id
