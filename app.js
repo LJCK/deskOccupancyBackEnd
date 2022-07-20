@@ -28,5 +28,7 @@ app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })) // for parsing application
 app.use(cors(corsOptions))
 
-
-app.use('/',deskRoutes)
+app.get('/', (req,res)=>{
+    res.send("Welcome to backend");
+  })
+app.use('/desk',deskRoutes)

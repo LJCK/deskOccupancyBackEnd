@@ -2,6 +2,7 @@ const {newOccupancy} = require("../models/desk")
 const moment = require("moment");
 
 const get_desk_status=async(req,res)=>{
+  console.log(req.query.level)
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({level:query_level})
   occupancy_array=[]
