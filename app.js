@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const deskRoutes = require('./routes/deskRoutes')
+const floorPlanRoutes = require('./routes/floorPlanRoutes')
 var cors = require('cors')
 
 
@@ -32,3 +33,4 @@ app.get('/', (req,res)=>{
     res.send("Welcome to backend");
   })
 app.use('/desk',deskRoutes)
+app.use('/floorPlan',floorPlanRoutes)
