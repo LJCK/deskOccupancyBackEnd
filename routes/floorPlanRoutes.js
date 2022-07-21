@@ -4,8 +4,7 @@ const storage = require('../imageMiddleware/imageStorage')
 const multer = require("multer");
 const router = express.Router();
 
-const maxSize = 110
-const upload = multer({ storage: storage, limits: { fileSize: maxSize } });
+const upload = multer({ storage: storage });
 
 router.post("/uploadImage", upload.single("file"), floorPlanController.uploadFloorPlan);
 router.get('/getImage', floorPlanController.getFloorPlan)

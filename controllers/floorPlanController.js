@@ -7,7 +7,7 @@ const uploadFloorPlan=(req, res) => {
     img: {
       data: fs.readFileSync("uploads/" + req.file.filename),
       // data:req.file.filename,
-      contentType: "image/jpg",
+      contentType: "image/png",
     },
   });
   saveImage
@@ -22,9 +22,18 @@ const uploadFloorPlan=(req, res) => {
 }
 
 const getFloorPlan=async(req,res)=>{
-  const data = []
-  data.push(await imageModel.findById({_id:req.query.filename}))
-  res.json(data)
+  try{
+    const data = []
+    const image =await imageModel.findById({_id:req.query.filename}).catch(err =>console.log(err))
+    if(image === null){
+      throw new Error("Image is null")
+    }
+    data.push(image)
+    res.json(data)
+  }catch(err){
+    console.log(err)
+  }
+  
 }
 
 module.exports = {
