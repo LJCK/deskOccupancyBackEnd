@@ -25,28 +25,6 @@ const get_desk_status=async(req,res)=>{
   res.send(occupancy_array)
 }
 
-// const get_desk_status=async(req,res)=>{
-//   // these two headers let us to send data continuously to frontend
-//   res.setHeader("Content-Type","text/html; charset=utf-8")
-//   res.setHeader("Transfer-Encoding","chunked")
-//   let connections =[]
-//   connections.push(res)
-//   let tick = 0
-//   setTimeout(function run(){
-//     console.log(tick)
-//     if(++tick>5){
-//       connections.map(res=>{
-//         res.write("END\n")
-//         res.end()
-//       })
-//     }
-//     connections.map((res,i)=>{
-//       res.write(`Hello ${i}, tick: ${tick}\n`)
-//     })
-//     setTimeout(run, 1000)
-//   },1000)
-// }
-
 const get_all_levels=async(req,res)=>{
   const floors = await newOccupancy.find()
   levels=[]
@@ -56,7 +34,12 @@ const get_all_levels=async(req,res)=>{
   res.send(levels)
 }
 
+const add_desk=async(req,res)=>{
+  console.log(req.body.data)
+}
+
 module.exports={
   get_desk_status,
-  get_all_levels
+  get_all_levels,
+  add_desk
 }
