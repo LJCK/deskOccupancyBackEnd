@@ -35,7 +35,28 @@ const get_all_levels=async(req,res)=>{
 }
 
 const add_desk=async(req,res)=>{
-  console.log(req.body.data)
+  const deskID = req.body.deskID
+  const location = req.body.location
+  const locationID = req.body.locationID
+  const level = req.body.level
+
+  let deskObj = await newOccupancy.findOne({_id: location,'desks.deskID':deskID})
+  if(deskObj){
+    res.status(409).send("Table ID already exists.")
+  }else{
+    let deskObj = await newOccupancy.findOneAndUpdate({_id: location},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
+    if(deskObj){
+      res.status(200).send("Table added")
+    }else{
+      let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
+      if(deskObj){
+        res.status(200).send("Table added")
+      }else{
+        res.status(404).send("Table added unsuccessful")
+      }
+      
+    }
+  }
 }
 
 module.exports={
