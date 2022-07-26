@@ -40,18 +40,22 @@ const add_desk=async(req,res)=>{
   const locationID = req.body.locationID
   const level = req.body.level
 
-  let deskObj = await newOccupancy.findOne({_id: location,'desks.deskID':deskID})
+  let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
   if(deskObj){
     res.status(409).send("Table ID already exists.")
   }else{
-    let deskObj = await newOccupancy.findOneAndUpdate({_id: location},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
+    let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
     if(deskObj){
+      console.log("DB updated")
       res.status(200).send("Table added")
     }else{
+      console.log("No record in DB, now creating")
       let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
-      if(deskObj){
+      try{
+        deskObj.save()
         res.status(200).send("Table added")
-      }else{
+      }
+      catch{
         res.status(404).send("Table added unsuccessful")
       }
       
