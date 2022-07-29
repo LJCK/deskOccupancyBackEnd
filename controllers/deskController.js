@@ -26,12 +26,10 @@ const get_desk_status=async(req,res)=>{
 }
 
 const get_all_levels=async(req,res)=>{
-  const floors = await newOccupancy.find()
-  levels=[]
-  floors.forEach((floor)=>{
-    levels.push(floor.level)
-  })
-  res.send(levels)
+  const location = req.query.location
+  const floors = await newOccupancy.find({location: location})
+  console.log(floors)
+  res.send(floors)
 }
 
 const add_desk=async(req,res)=>{
