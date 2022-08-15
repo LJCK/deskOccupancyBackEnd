@@ -2,33 +2,33 @@ const {newOccupancy} = require("../models/desk")
 const moment = require("moment");
 
 const get_desk_status=async(req,res)=>{
-  console.log(req.query.level)
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({level:query_level})
-  occupancy_array=[]
-  for(let desk_id in floor.desks){
-    let expiry_time = moment(floor.desks[desk_id]["expiryTime"],"hh:mm:ss");
-    occupancy_status={}
-    if(floor.desks[desk_id]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
-      occupancy_status["id"]=desk_id
-      occupancy_status[desk_id]='unoccupied'
-      occupancy_status['expiryTime']= null
-      
-    }else{
-      occupancy_status["id"]=desk_id
-      occupancy_status[desk_id]='occupied'
-      occupancy_status['expiryTime']= floor.desks[desk_id]["expiryTime"]
-    }
-    occupancy_array.push(occupancy_status)
-  }
   
+  occupancy_array=[]
+  if (floor != []){ // push table status into an array if exists 
+    for(let desk_id in floor.desks){
+      let expiry_time = moment(floor.desks[desk_id]["expiryTime"],"hh:mm:ss");
+      occupancy_status={}
+      if(floor.desks[desk_id]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
+        occupancy_status["id"]=desk_id
+        occupancy_status[desk_id]='unoccupied'
+        occupancy_status['expiryTime']= null
+        
+      }else{
+        occupancy_status["id"]=desk_id
+        occupancy_status[desk_id]='occupied'
+        occupancy_status['expiryTime']= floor.desks[desk_id]["expiryTime"]
+      }
+      occupancy_array.push(occupancy_status)
+    }
+  }
   res.send(occupancy_array)
 }
 
 const get_all_levels=async(req,res)=>{
   const location = req.query.location
-  const floors = await newOccupancy.find({location: location})
-  console.log(floors)
+  const floors = await newOccupancy.find({location: location}).sort({"level":1})
   res.send(floors)
 }
 
