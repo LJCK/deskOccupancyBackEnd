@@ -32,18 +32,10 @@ const uploadFloorPlan=async(req, res) => {
 }
 
 const getFloorPlan=async(req,res)=>{
-  try{
-    const data = []
-    const image =await imageModel.findById({_id:req.query.UID}).catch(err =>console.log(err))
-    if(image === null){
-      throw new Error("Image is null")
-    }
-    data.push(image)
-    res.json(data)
-  }catch(err){
-    res.send(err)
-  }
-  
+  const data = []
+  const image =await imageModel.findById({_id:req.query.filename}).catch(err =>console.log(err))
+  data.push(image)
+  res.json(data)
 }
 
 module.exports = {
