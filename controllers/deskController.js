@@ -3,7 +3,8 @@ const moment = require("moment");
 
 const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
-  const floor = await newOccupancy.findOne({level:query_level})
+  console.log(query_level)
+  const floor = await newOccupancy.findOne({_id:query_level})
   
   occupancy_array=[]
   if (floor != []){ // push table status into an array if exists 

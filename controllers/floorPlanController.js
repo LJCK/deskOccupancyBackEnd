@@ -5,17 +5,15 @@ const uploadFloorPlan=async(req, res) => {
   const existingFloorPlan = await imageModel.findOneAndReplace({_id: req.body.UID},{
     img: {
     data: fs.readFileSync("uploads/" + req.file.filename),
-    // data:req.file.filename,
     contentType: "image/png",
   }})
   if(existingFloorPlan){
     res.status(200).send('Floor plan is updated')
   }else{
     const saveImage =  imageModel({
-      _id: req.body.id,
+      _id: req.body.UID,
       img: {
         data: fs.readFileSync("uploads/" + req.file.filename),
-        // data:req.file.filename,
         contentType: "image/png",
       },
     });
@@ -36,6 +34,10 @@ const getFloorPlan=async(req,res)=>{
   const image =await imageModel.findById({_id:req.query.filename}).catch(err =>console.log(err))
   data.push(image)
   res.json(data)
+}
+
+const getAllFloorPlan = async(req,res)=>{
+  
 }
 
 module.exports = {
