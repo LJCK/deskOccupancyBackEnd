@@ -53,36 +53,35 @@ const add_desk=async(req,res)=>{
   const locationID = req.body.locationID
   const level = req.body.level
 
-  let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
-  if(deskObj){
-    res.status(409).send("Table ID already exists.")
-  }else{
-    let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
+  try{
+    let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
     if(deskObj){
-      console.log("DB updated")
-      res.status(200).send("Table added")
+      res.status(409).send("Table ID already exists.")
     }else{
-      console.log("No record in DB, now creating")
-      let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
-      try{
-        deskObj.save()
+      let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
+      if(deskObj){
+        console.log("DB updated")
         res.status(200).send("Table added")
+      }else{
+        console.log("No record in DB, now creating")
+        let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
+        try{
+          deskObj.save()
+          res.status(200).send("Table added")
+        }
+        catch{
+          res.status(404).send("Table added unsuccessful")
+        }
       }
-      catch{
-        res.status(404).send("Table added unsuccessful")
-      }
-      
     }
+  }catch(error){
+    console.log("error\n",error)
   }
 }
 
 const permit_join=(req,res)=>{
-  const deskID = req.body.deskID
-  const location = req.body.location
-  const locationID = req.body.locationID
-  const level = req.body.level
-  console.log("deskID: ", deskID, " locationID: ",locationID, " level: ", level)
-  device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": true }', { "qos": 1 }, onPermitJoin);
+  
+  device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": true }', { "qos": 0 }, onPermitJoin);
   
   function onPermitJoin(err) {
     if (err) {
@@ -99,10 +98,14 @@ const permit_join=(req,res)=>{
     if (err) {
       console.log("Error occured: " + err);
       console.log("Closing device...");
+      res.status(409).send(err)
+      return
       device.end();
     }
     else {
-      res.status(200).send("You may now pair your device")
+      console.log("You may now pair your device.")
+      res.status(200).send("You may now pair your device, please follow the following steps.1)You need to be physically beside the IoT Hub. 2)Press and hold the button on the sensor until the blinking light stops")
+      return 
       console.log("You may now pair your device") //ready for pairing
     }
   }
@@ -114,31 +117,39 @@ const pairDevice=async(req,res)=>{
   const location = req.body.location
   const locationID = req.body.locationID
   const level = req.body.level
-  console.log("deskID: ", deskID, " locationID: ",locationID, " level: ", level)
-  let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
-  if(deskObj){
-    res.status(409).send("Table ID already exists.")
-  }else{
+  console.log("received a request: \n", req.body)
+  
     device.on("message", onMessage)
 
-    function onMessage(topic, message, packet) {
+    async function onMessage(topic, message, packet) {
+      
       let messageObj = JSON.parse(message)
-      if (topic == "zigbee2mqtt/bridge/event" && messageObj.type == "device_interview") {
+      console.log("received message\n",messageObj)
+
+      let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
+      if(deskObj){
+        device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": false }');
+        console.log("send res due to sensor already exists", deskID)
+        res.status(409).send("Sensor for this table is already exists.")
+        res.end()
+        return
+      }else if (topic == "zigbee2mqtt/bridge/event" && messageObj.type == "device_interview") {
         switch (messageObj.data.status) {
           case "started":
             console.log("Device interview commencing. Please wait... (You might see this multiple times as device pairs)");
+            console.log("The request body is ",req.body)
+            console.log("The saved name is ", deskID)
             break;
           case "failed":
-            console.log("Device interview failed, please try again...")
-            device.end();
-            console.log("Closing device...");
+            device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": false }');
+            console.log("send res due to pairing fail", deskID)
+            res.status(502).send("Device interview failed, please try again...")
+            res.end()
+            return
             break;
           case "successful": //on pairing...
             let friendly_name = messageObj.data.friendly_name;
-            // let description = messageObj.data.definition.description;
-            // console.log(`Please input <sensorType>/<sensorName> for the ${description}. E.g. vibration/table_1`);
-            // let new_friendly_name = prompt("> "); //prompt for new name
-            new_friendly_name = locationID+"_"+level+"_"+deskID
+            new_friendly_name = deskID
             if (new_friendly_name != "") {
                 device.publish("zigbee2mqtt/bridge/request/device/rename", `{ "from": "${friendly_name}", "to": "devices/${new_friendly_name}" }`, null, onRename)
             }
@@ -146,31 +157,46 @@ const pairDevice=async(req,res)=>{
       }
     }
 
-    function onRename(err) {
+    async function onRename(err) {
       if (err) {
-        console.log("Error occured: " + err);
-        console.log("Closing device...");
-        device.end();
+        device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": false }');
+        console.log("send res due to rename fail", deskID)
+        res.status(502).send(err)
+        res.end()
+        return
       }
       else {
-        console.log("Successfully renamed!")
+        // console.log("Successfully renamed!")
         device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": false }');
-        res.status(200).send("Successfully renamed!")
+        try{
+          let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,expiryTime:null}}})
+          if(deskObj){
+            console.log("send res due to sensor added to db", deskID)
+            res.status(200).send("Sensor successfully added")
+            res.end()
+            return
+  
+          }else{
+            // No record in DB, now creating
+            let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
+            try{
+              deskObj.save()
+              console.log("send res due to created new db", deskID)
+              res.status(200).send("Sensor successfully added")
+              res.end()
+              return 
+            }
+            catch{
+  
+              res.status(409).send("Fails to save sensor into database")
+              res.end()
+              return
+            }
+          }
+        }catch(error){console.log(error)}
+         
       }
     }
-
-    // function onDisallowJoin(err) {
-    //   if (err) {
-    //     console.log("Error occured: " + err);
-    //     console.log("Closing device...");
-    //     device.end();
-    //   }
-    //   else {
-    //     console.log("Closing device...");
-    //     device.end();
-    //   }
-    // }
-  }
 }
 
 module.exports={
