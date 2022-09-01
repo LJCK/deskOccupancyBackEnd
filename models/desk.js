@@ -20,5 +20,24 @@ const newOccupancySchema = new Schema({
   } 
 });
 
+const IoTDataSchema = new Schema(
+    {
+        timestamp: Date,
+        metaData:{
+            sensorID: String,
+            locationID: String,
+            status: String,
+        },
+    },
+    {
+        timeseries: {
+            timeField: 'timestamp', //eventual data must have a timestamp field.
+            metaField: "metaData", //eventual data must have a sensorName field.
+            granularity: "minutes", //can change this to match granularity of data generation
+            },
+    }
+)
+
 const newOccupancy = mongoose.model('Current Occupancy', newOccupancySchema);
-module.exports = {newOccupancy}
+const IoTData = mongoose.model("IoT Data Collection", IoTDataSchema)
+module.exports = {newOccupancy,IoTData}
