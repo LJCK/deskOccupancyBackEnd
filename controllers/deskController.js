@@ -81,7 +81,7 @@ const add_desk=async(req,res)=>{
 
 const permit_join=(req,res)=>{
   
-  device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": true }', { "qos": 0 }, onPermitJoin);
+  device.publish("zigbee2mqtt/bridge/request/permit_join", '{ "value": true }', { "qos": 1 }, onPermitJoin);
   
   function onPermitJoin(err) {
     if (err) {
@@ -90,7 +90,8 @@ const permit_join=(req,res)=>{
       device.end();
     }
     else {
-      device.subscribe("zigbee2mqtt/bridge/event", null, onSubscribe) //subscribe to MQTT topic
+      onSubscribe()
+      // device.subscribe("zigbee2mqtt/bridge/event", null, onSubscribe) //subscribe to MQTT topic
     }
   }
 
@@ -118,9 +119,13 @@ const pairDevice=async(req,res)=>{
   const locationID = req.body.locationID
   const level = req.body.level
   console.log("received a request: \n", req.body)
+  device.subscribe("zigbee2mqtt/bridge/event", null, onSubscribe) //subscribe to MQTT topic
   
+  function onSubscribe(){
+    console.log("subscribed to the topic zigbee2mqtt/bridge/event")
     device.on("message", onMessage)
-
+  }
+  // device.on("message", onMessage)
     async function onMessage(topic, message, packet) {
       
       let messageObj = JSON.parse(message)
