@@ -74,29 +74,33 @@ const get_all_sensors = async(req,res)=>{
 
 const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
-  console.log(query_level)
   const floor = await newOccupancy.findOne({_id:query_level})
-  console.log("floor",floor)
 
   occupancy_array=[]
   if (floor != []){ // push table status into an array if exists 
-    for(let desk_id in floor.desks){
-      let expiry_time = moment(floor.desks[desk_id]["expiryTime"],"hh:mm:ss");
+    for(let item in floor.desks){
+      let expiry_time = moment(floor.desks[item]["expiryTime"],"hh:mm:ss");
+      const deskID = floor.desks[item].deskID
       occupancy_status={}
-      if(floor.desks[desk_id]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
-        occupancy_status["id"]=desk_id
-        occupancy_status[desk_id]='unoccupied'
+      if(floor.desks[item]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
+        occupancy_status["id"]=deskID
+        occupancy_status["status"]='unoccupied'
         occupancy_status['expiryTime']= null
+        compairDeskTimeseries(deskID)
         
       }else{
-        occupancy_status["id"]=desk_id
-        occupancy_status[desk_id]='occupied'
-        occupancy_status['expiryTime']= floor.desks[desk_id]["expiryTime"]
+        occupancy_status["id"]=deskID
+        occupancy_status["status"]='occupied'
+        occupancy_status['expiryTime']= floor.desks[item]["expiryTime"]
       }
       occupancy_array.push(occupancy_status)
     }
   }
   res.send(occupancy_array)
+}
+
+async function compairDeskTimeseries(deskID){
+
 }
 
 const get_all_levels=async(req,res)=>{
