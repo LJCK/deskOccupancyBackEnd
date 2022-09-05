@@ -76,31 +76,38 @@ const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({_id:query_level})
 
-  occupancy_array=[]
   if (floor != []){ // push table status into an array if exists 
     for(let item in floor.desks){
-      let expiry_time = moment(floor.desks[item]["expiryTime"],"hh:mm:ss");
+      let expiry_time = moment(floor.desks[item]["expiryTime"]);
       const deskID = floor.desks[item].deskID
-      occupancy_status={}
+
       if(floor.desks[item]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
-        occupancy_status["id"]=deskID
-        occupancy_status["status"]='unoccupied'
-        occupancy_status['expiryTime']= null
-        compairDeskTimeseries(deskID)
-        
+        if(compairDeskTimeseries(deskID, 5)){
+          item["status"]='occupied'
+          item['expiryTime']= moment.utc().local().add(2,'hours')
+          item['skipTime'] = moment.utc().local().add(1,"hours")
+        }else{
+          item["status"]='unoccupied'
+          item['expiryTime']= null
+          item['skipTime'] = null
+        }
       }else{
-        occupancy_status["id"]=deskID
-        occupancy_status["status"]='occupied'
-        occupancy_status['expiryTime']= floor.desks[item]["expiryTime"]
+        skip_time = moment(floor.desks[item]["skipTime"])
+        if(skip_time.isBefore(moment.utc().local())){
+          if(compairDeskTimeseries(deskID, 60)){
+            item["status"]='occupied'
+            item['expiryTime']= moment.utc().local().add(2,'hours')
+          }
+        }
       }
-      occupancy_array.push(occupancy_status)
     }
   }
-  res.send(occupancy_array)
+  await newOccupancy.findOneAndUpdate({"_id":floor["deskID"]}, floor)
+  res.status(200).send(floor)
 }
 
-async function compairDeskTimeseries(deskID){
-
+async function compairDeskTimeseries(deskID, time){
+  return false
 }
 
 const get_all_levels=async(req,res)=>{
@@ -120,13 +127,13 @@ const add_desk=async(req,res)=>{
     if(deskObj){
       res.status(409).send("Table ID already exists.")
     }else{
-      let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,expiryTime: null}}})
+      let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,status: null, expiryTime: null, skipTime:null}}})
       if(deskObj){
         console.log("DB updated")
         res.status(200).send("Hold the button on the sensor until it stop blinking")
       }else{
         console.log("No record in DB, now creating")
-        let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, expiryTime:null}]})
+        let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, status: null, expiryTime:null, skipTime:null}]})
         try{
           deskObj.save()
           res.status(200).send("Hold the button on the sensor until it stop blinking")
