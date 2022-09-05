@@ -4,12 +4,12 @@ const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const deskRoutes = require('./routes/deskRoutes')
 const floorPlanRoutes = require('./routes/floorPlanRoutes')
-var cors = require('cors')
 
+var cors = require('cors')
 
 const app = express();
 const PORT = 3001;
-  
+
 
 var corsOptions = {
     origin: '*',

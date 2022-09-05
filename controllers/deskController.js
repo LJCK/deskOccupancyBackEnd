@@ -1,10 +1,16 @@
 const {newOccupancy, IoTData} = require("../models/desk")
 const moment = require("moment");
-const awsIot = require("aws-iot-device-sdk")
+const awsIot = require("aws-iot-device-sdk");
+const dotenv = require("dotenv")
+dotenv.config()
+
+THRESHOLD_5_MINUTES = process.env.THRESHOLD_5_MINUTES
+THRESHOLD_60_MINUTES = process.env.THRESHOLD_60_MINUTES
+AWS_HOST_ID = process.env.AWS_HOST_ID
 
 const device = awsIot.device({
-  clientId: 'RasperryMQTTClient',
-  host: 'a2x864rhawhdg9-ats.iot.ap-southeast-1.amazonaws.com',
+  // clientId: 'RasperryMQTTClient',
+  host: AWS_HOST_ID,
   port: 8883,
   keyPath: './certs/private.pem.key',
   certPath: './certs/certificate.pem.crt',
@@ -75,39 +81,61 @@ const get_all_sensors = async(req,res)=>{
 const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({_id:query_level})
-
+  let num_of_occupied_table = 0
   if (floor != []){ // push table status into an array if exists 
     for(let item in floor.desks){
       let expiry_time = moment(floor.desks[item]["expiryTime"]);
       const deskID = floor.desks[item].deskID
-
+      // console.log("checking deskID", deskID)
       if(floor.desks[item]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
-        if(compairDeskTimeseries(deskID, 5)){
-          item["status"]='occupied'
-          item['expiryTime']= moment.utc().local().add(2,'hours')
-          item['skipTime'] = moment.utc().local().add(1,"hours")
+        if(await compareDeskTimeseries(deskID, 5)){
+          // console.log('change status to occupied')
+          floor.desks[item]["status"]='occupied'
+          floor.desks[item]['expiryTime']= moment.utc().local().add(2,'minutes')
+          floor.desks[item]['skipTime'] = moment.utc().local().add(1,"minutes")
+          num_of_occupied_table++
         }else{
-          item["status"]='unoccupied'
-          item['expiryTime']= null
-          item['skipTime'] = null
+          // console.log("change status to unoccupied")
+          floor.desks[item]["status"]='unoccupied'
+          floor.desks[item]['expiryTime']= null
+          floor.desks[item]['skipTime'] = null
         }
       }else{
+        num_of_occupied_table++
         skip_time = moment(floor.desks[item]["skipTime"])
         if(skip_time.isBefore(moment.utc().local())){
-          if(compairDeskTimeseries(deskID, 60)){
-            item["status"]='occupied'
-            item['expiryTime']= moment.utc().local().add(2,'hours')
+          if(await compareDeskTimeseries(deskID, 60)){
+            // console.log("returned from 60 mins checking")
+            floor.desks[item]['expiryTime']= moment.utc().local().add(2,'hours')
           }
         }
       }
     }
   }
-  await newOccupancy.findOneAndUpdate({"_id":floor["deskID"]}, floor)
-  res.status(200).send(floor)
+
+  await newOccupancy.findOneAndUpdate({"_id":floor["_id"]}, floor)
+  res.status(200).send({tables : floor, occupencyRatio : num_of_occupied_table/floor.desks.length*100 })
 }
 
-async function compairDeskTimeseries(deskID, time){
-  return false
+async function compareDeskTimeseries(deskID, time){
+  const now = new Date()
+  const some_minutes_ago = new Date(now.setMinutes(now.getMinutes()-time)).toISOString()
+  const records = await IoTData.find({"timestamp": {$gte: some_minutes_ago}, "metaData.sensorID":deskID })
+  console.log("check past \n", time, " minutes")
+  console.log("length of records\n", records.length)
+  if(time === 5){
+    if(records.length > THRESHOLD_5_MINUTES){
+      return true
+    }else{
+      return false
+    }
+  }else{
+    if(records.length > THRESHOLD_60_MINUTES){
+      return true
+    }else{
+      return false
+    }
+  }
 }
 
 const get_all_levels=async(req,res)=>{
@@ -125,21 +153,20 @@ const add_desk=async(req,res)=>{
   try{
     let deskObj = await newOccupancy.findOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}})
     if(deskObj){
-      res.status(409).send("Table ID already exists.")
+      res.status(409).send("Sensor ID already exists.")
     }else{
       let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{'$push':{"desks":{deskID:deskID,status: null, expiryTime: null, skipTime:null}}})
       if(deskObj){
-        console.log("DB updated")
-        res.status(200).send("Hold the button on the sensor until it stop blinking")
+        res.status(200).send("Sensor added successful.")
       }else{
         console.log("No record in DB, now creating")
         let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID, status: null, expiryTime:null, skipTime:null}]})
         try{
           deskObj.save()
-          res.status(200).send("Hold the button on the sensor until it stop blinking")
+          res.status(200).send("Sensor added successful.")
         }
         catch{
-          res.status(404).send("Table added unsuccessful")
+          res.status(404).send("Sensor added unsuccessful")
         }
       }
     }
@@ -166,6 +193,4 @@ module.exports={
   get_all_sensors,
   add_desk,
   delete_desk
-  // permit_join,
-  // pairDevice
 }
