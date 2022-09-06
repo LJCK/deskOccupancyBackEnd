@@ -4,6 +4,7 @@ const morgan = require('morgan')
 const bodyParser = require('body-parser')
 const deskRoutes = require('./routes/deskRoutes')
 const floorPlanRoutes = require('./routes/floorPlanRoutes')
+const userRoutes = require('./routes/userRoutes')
 
 var cors = require('cors')
 
@@ -32,5 +33,8 @@ app.use(cors(corsOptions))
 app.get('/', (req,res)=>{
     res.send("Welcome to backend");
   })
+
+// Routes
 app.use('/desk',deskRoutes)
 app.use('/floorPlan',floorPlanRoutes)
+app.use('/user', userRoutes)
