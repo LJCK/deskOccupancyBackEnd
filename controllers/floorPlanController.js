@@ -2,6 +2,7 @@ const imageModel = require('../models/floorPlan')
 const fs = require("fs");
 
 const uploadFloorPlan=async(req, res) => {
+  console.log(req.body)
   const existingFloorPlan = await imageModel.findOneAndReplace({_id: req.body.UID},{
     img: {
     data: fs.readFileSync("uploads/" + req.file.filename),
@@ -12,6 +13,8 @@ const uploadFloorPlan=async(req, res) => {
   }else{
     const saveImage =  imageModel({
       _id: req.body.UID,
+      location:req.body.location,
+      level: req.body.level,
       img: {
         data: fs.readFileSync("uploads/" + req.file.filename),
         contentType: "image/png",
@@ -37,10 +40,27 @@ const getFloorPlan=async(req,res)=>{
 }
 
 const getAllFloorPlan = async(req,res)=>{
+  const images = await imageModel.aggregate([
+    {$project:{location: 1, level: 1} },
+    {$sort: {level:1}}
+  ])
+  res.status(200).send(images)
+}
+
+const deleteImage = async(req,res)=>{
+  const imageID = req.body.id
+  try{
+    await imageModel.findOneAndDelete({"_id":imageID})
+    res.status(200).send("image deleted")
+  }catch(error){
+    res.send("error")
+  }
   
 }
 
 module.exports = {
   uploadFloorPlan,
-  getFloorPlan
+  getFloorPlan,
+  getAllFloorPlan,
+  deleteImage
 }

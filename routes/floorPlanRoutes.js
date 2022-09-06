@@ -8,5 +8,7 @@ const upload = multer({ storage: storage });
 
 router.post("/uploadImage", upload.single("file"), floorPlanController.uploadFloorPlan);
 router.get('/getImage', floorPlanController.getFloorPlan)
+router.get('/getAllImages',floorPlanController.getAllFloorPlan)
+router.delete('/deleteImage', floorPlanController.deleteImage)
 
 module.exports=router
