@@ -26,7 +26,7 @@ const IoTDataSchema = new Schema(
         metaData:{
             sensorID: String,
             locationID: String,
-            status: String,
+            vibration: String,
         },
     },
     {
