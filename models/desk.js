@@ -15,7 +15,7 @@ const newOccupancySchema = new Schema({
       required: true
   },
   desks:{
-      type: Object,
+      type: Array,
       required: true
   } 
 });

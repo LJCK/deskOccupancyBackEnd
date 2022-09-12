@@ -80,6 +80,7 @@ async function logData(sensorID, timestamp, payload) { //writes the data to mong
     }
   }else if( payload.vibration === false){
     console.log("received a vibration false message")
+    sensorName_array = sensorID.split("_")
     locationID = sensorName_array[0]+"_"+sensorName_array[1]
     update_desk_status(locationID)
   }
@@ -90,7 +91,7 @@ const get_all_sensors = async(req,res)=>{
   res.status(200).send(allSensors)
 }
 
-const update_desk_status=async(locationID, sensorID)=>{
+const update_desk_status=async(locationID)=>{
   // const desk ={}
   // desk["_id"]= locationID
   // desk[`desks.${sensorID}.deskID`] = sensorID
@@ -100,102 +101,115 @@ const update_desk_status=async(locationID, sensorID)=>{
   if (floor != []){ 
     for(let item in floor.desks){
       // skip non vibration type sensors
-      if(floor.desks[item]["sensorType"] != "vibration"){
+      if(item["sensorType"] != "vibration"){
         break
       }
 
       num_of_vibration_sensor++
 
-      let expiry_time = moment(floor.desks[item]["expiryTime"]);
-      const deskID = floor.desks[item].deskID
+      let expiry_time = moment(item["expiryTime"]);
+      const deskID = item.deskID
 
       // this is to check if the table is unoccupied
-      if(floor.desks[item]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
+      if(item["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
         if(await compareDeskTimeseries(deskID, 5)){
           // console.log('change status to occupied')
-          floor.desks[item]["status"]='occupied'
-          floor.desks[item]['expiryTime']= moment.utc().local().add(2,'minutes')
-          floor.desks[item]['skipTime'] = moment.utc().local().add(1,"minutes")
+          item["status"]='occupied'
+          item['expiryTime']= moment.utc().local().add(2,'hours')
+          item['skipTime'] = moment.utc().local().add(1,"hours")
           num_of_occupied_table++
         }else{
           // console.log("change status to unoccupied")
-          floor.desks[item]["status"]='unoccupied'
-          floor.desks[item]['expiryTime']= null
-          floor.desks[item]['skipTime'] = null
+          item["status"]='unoccupied'
+          item['expiryTime']= null
+          item['skipTime'] = null
         }
       }else{
         num_of_occupied_table++
-        skip_time = moment(floor.desks[item]["skipTime"])
+        skip_time = moment(item["skipTime"])
         if(skip_time.isBefore(moment.utc().local())){
           if(await compareDeskTimeseries(deskID, 60)){
             // console.log("returned from 60 mins checking")
-            floor.desks[item]['expiryTime']= moment.utc().local().add(2,'hours')
+            item['expiryTime']= moment.utc().local().add(2,'hours')
           }
         }
       }
     }
   }
-  floor.save(function(err){
-    if(err){
-      console.log("floor.save has an error", err)
-    }else{
-      metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_occupied_table} out of ${num_of_vibration_sensor}`})
-      device.publish(`bumGoWhere/frontend/update/${floor["_id"]}`, payload = metaData, QoS=1)
-      console.log("device published loging data to frontend")
-    }
-  })  
+
+  await newOccupancy.findOneAndUpdate({"_id":locationID}, floor)
+  
+  metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_occupied_table} out of ${num_of_vibration_sensor}`})
+  device.publish(`bumGoWhere/frontend/update/${floor["_id"]}`, payload = metaData, QoS=1)
+  console.log("device published loging data to frontend")
+
+  // floor.save(function(err){
+  //   if(err){
+  //     console.log("floor.save has an error", err)
+  //   }else{
+  //     metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_occupied_table} out of ${num_of_vibration_sensor}`})
+  //     device.publish(`bumGoWhere/frontend/update/${floor["_id"]}`, payload = metaData, QoS=1)
+  //     console.log("device published loging data to frontend")
+  //   }
+  // })  
 }
 
 const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({_id:query_level})
+
+  // calculate the number of vibration sensor and the number of occupied table
   let num_of_occupied_table = 0
   let num_of_vibration_sensor = 0
+
   if (floor != []){ // push table status into an array if exists 
     for(let item in floor.desks){
 
-      if(floor.desks[item]["sensorType"] != "vibration"){
+      if(item["sensorType"] != "vibration"){
         break
       }
       num_of_vibration_sensor++
 
-      let expiry_time = moment(floor.desks[item]["expiryTime"]);
-      const deskID = floor.desks[item].deskID
+      let expiry_time = moment(item["expiryTime"]);
+      const deskID = item.deskID
 
       // this is to check if the table is unoccupied
-      if(floor.desks[item]["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
+      if(item["expiryTime"]===null || expiry_time.isBefore(moment.utc().local())){
         if(await compareDeskTimeseries(deskID, 5)){
           // console.log('change status to occupied')
-          floor.desks[item]["status"]='occupied'
-          floor.desks[item]['expiryTime']= moment.utc().local().add(2,'minutes')
-          floor.desks[item]['skipTime'] = moment.utc().local().add(1,"minutes")
+          item["status"]='occupied'
+          item['expiryTime']= moment.utc().local().add(2,'hours')
+          item['skipTime'] = moment.utc().local().add(1,"hours")
           num_of_occupied_table++
         }else{
           // console.log("change status to unoccupied")
-          floor.desks[item]["status"]='unoccupied'
-          floor.desks[item]['expiryTime']= null
-          floor.desks[item]['skipTime'] = null
+          item["status"]='unoccupied'
+          item['expiryTime']= null
+          item['skipTime'] = null
         }
       }else{
         num_of_occupied_table++
-        skip_time = moment(floor.desks[item]["skipTime"])
+        skip_time = moment(item["skipTime"])
         if(skip_time.isBefore(moment.utc().local())){
           if(await compareDeskTimeseries(deskID, 60)){
             // console.log("returned from 60 mins checking")
-            floor.desks[item]['expiryTime']= moment.utc().local().add(2,'hours')
+            item['expiryTime']= moment.utc().local().add(2,'hours')
           }
         }
       }
     }
   }
 
-  floor.save(function(error){
-    if(error){
-      console.log("Save updated desk status using API went wrong with error \n", error )
-    }else{
-      res.status(200).send({tables : floor, occupencyRatio : `${num_of_occupied_table} out of ${num_of_vibration_sensor}` })
-    }
-  })
+  await newOccupancy.findOneAndUpdate({_id:query_level}, floor)
+  res.status(200).send({tables : floor, occupencyRatio : `${num_of_occupied_table} out of ${num_of_vibration_sensor}` })
+
+  // floor.save(function(error){
+  //   if(error){
+  //     console.log("Save updated desk status using API went wrong with error \n", error )
+  //   }else{
+  //     res.status(200).send({tables : floor, occupencyRatio : `${num_of_occupied_table} out of ${num_of_vibration_sensor}` })
+  //   }
+  // })
 }
 
 async function compareDeskTimeseries(deskID, time){
@@ -237,20 +251,19 @@ const add_desk=async(req,res)=>{
     if(deskObj){
       res.status(409).send("Sensor ID already exists.")
     }else{
-      const desks ={}
-      desks[`desks.${deskID}`] = {deskID: deskID, status: null, sensorType: sensorType, expiryTime: null, skipTime:null}
+      
       // console.log("temp ",temp)
-      let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{$set:desks})
+      let deskObj = await newOccupancy.findOneAndUpdate({_id: locationID},{$push:{"desks":{deskID:deskID,status: null, sensorType: sensorType, expiryTime: null}}})
       if(deskObj){
         res.status(200).send("Sensor added successful.")
       }else{
         console.log("No record in DB, now creating")
-        const desks ={}
-        desks["_id"] = locationID
-        desks["location"] = location
-        desks["level"] = level
-        desks[`desks.${deskID}`] = {deskID: deskID,status: null,sensorType: sensorType, expiryTime: null, skipTime:null}
-        let deskObj = await newOccupancy(desks)
+        // const desks ={}
+        // desks["_id"] = locationID
+        // desks["location"] = location
+        // desks["level"] = level
+        // desks[`desks.${deskID}`] = [{deskID: deskID,status: null,sensorType: sensorType, expiryTime: null, skipTime:null}]
+        let deskObj = await newOccupancy({_id:locationID, location:location, level:level,desks:[{deskID:deskID,status: null, sensorType: sensorType, expiryTime: null}]})
         try{
           deskObj.save()
           res.status(200).send("Sensor added successful.")
@@ -268,17 +281,21 @@ const add_desk=async(req,res)=>{
 const delete_desk = async(req,res)=>{
   const locationID = req.body.locationID
   const deskID = req.body.deskID
+  // try{
+  //   const data = {}
+  //   data["_id"] = locationID
+  //   data[`desks.${deskID}`] = ""
+  //   const unset = {}
+  //   unset[`desks.${deskID}`] = ""
+  //   // const temp = await newOccupancy.findOne({data})
+  //   // console.log(temp)
+  //   const temp = await newOccupancy.updateOne({data},
+  //     {'$unset':unset}) 
+  //   console.log(temp)
+  //   res.status(200).send("Sensor removed.")
   try{
-    const data = {}
-    data["_id"] = locationID
-    data[`desks.${deskID}`] = ""
-    const unset = {}
-    unset[`desks.${deskID}`] = ""
-    // const temp = await newOccupancy.findOne({data})
-    // console.log(temp)
-    const temp = await newOccupancy.updateOne({data},
-      {'$unset':unset}) 
-    console.log(temp)
+    await newOccupancy.updateOne({_id: locationID,desks:{$elemMatch:{deskID:deskID}}},
+      {'$pull':{desks:{deskID:deskID}}}) 
     res.status(200).send("Sensor removed.")
   }catch(error){
     res.send("error")
