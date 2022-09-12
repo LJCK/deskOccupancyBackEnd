@@ -30,6 +30,8 @@ const loginUser = async (req, res) => {
 
         //create a token
         const token = createToken(user._id)
+        const wow = jwt.verify(token, process.env.SECRET)
+        console.log(wow)
 
         res.status(200).json({email, token})
     } catch (err) {
