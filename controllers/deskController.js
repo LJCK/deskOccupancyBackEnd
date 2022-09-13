@@ -39,7 +39,6 @@ device.subscribe(topic);
 function onMessage(topic, message) { //on message, logs data to mongoDB
   // this if condition is to prevent empty message crashing the backend
   if(message.toString('utf8')!=""){
-    console.log("topic",topic)
     let topicComponents = topic.split("/")
     let sensorName = topicComponents[2]; //assuming friendly name follows convention of <sensorType>_<sensorName>
     let payload = JSON.parse(message)
@@ -67,7 +66,7 @@ async function logData(sensorID, timestamp, payload) { //writes the data to mong
           },
       })
       try{
-        console.log(IoTObj)
+        console.log("received a vibration:\n",IoTObj)
         IoTObj.save()
         update_desk_status(locationID)
         console.log('Logged the data')
@@ -98,11 +97,12 @@ const update_desk_status=async(locationID)=>{
   const floor = await newOccupancy.findOne({"_id":locationID})
   let num_of_occupied_table = 0
   let num_of_vibration_sensor = 0
+  console.log("updating all sensors")
   if (floor != []){ 
-    for(item in floor.desks){
+    for(let item of floor.desks){
     
       // skip non vibration type sensors
-      console.log("these are all the sensors ", floor.desks[item])
+      console.log("updating sensor\n", item)
       if(item["sensorType"] != "vibration"){
         return
       }
@@ -143,7 +143,7 @@ const update_desk_status=async(locationID)=>{
   
   metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_occupied_table}/${num_of_vibration_sensor}`})
   device.publish(`bumGoWhere/frontend/update/${floor["_id"]}`, payload = metaData, QoS=1)
-  console.log("device published loging data to frontend")
+  console.log("push data to frontend")
 
   // floor.save(function(err){
   //   if(err){
@@ -159,14 +159,14 @@ const update_desk_status=async(locationID)=>{
 const get_desk_status=async(req,res)=>{
   const query_level = req.query.level
   const floor = await newOccupancy.findOne({_id:query_level})
-
+  console.log("updating all sensors")
   // calculate the number of vibration sensor and the number of occupied table
   let num_of_occupied_table = 0
   let num_of_vibration_sensor = 0
 
   if (floor != []){ // push table status into an array if exists 
-    for(let item in floor.desks){
-
+    for(let item of floor.desks){
+      console.log("updating sensor\n", item)
       if(item["sensorType"] != "vibration"){
         break
       }
@@ -203,7 +203,8 @@ const get_desk_status=async(req,res)=>{
   }
 
   await newOccupancy.findOneAndUpdate({_id:query_level}, floor)
-  res.status(200).send({tables : floor, occupencyRatio : `${num_of_occupied_table}/${num_of_vibration_sensor}` })
+  res.status(200).send({tables : floor, occupencyRatio : `${num_of_vibration_sensor-num_of_occupied_table}/${num_of_vibration_sensor}` })
+  console.log("push data to frontend")
 
   // floor.save(function(error){
   //   if(error){
