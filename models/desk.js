@@ -15,7 +15,7 @@ const newOccupancySchema = new Schema({
       required: true
   },
   desks:{
-      type: Object,
+      type: Array,
       required: true
   } 
 });
@@ -26,7 +26,7 @@ const IoTDataSchema = new Schema(
         metaData:{
             sensorID: String,
             locationID: String,
-            status: String,
+            vibration: String,
         },
     },
     {
