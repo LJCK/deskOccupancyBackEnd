@@ -141,7 +141,7 @@ const update_desk_status=async(locationID)=>{
 
   await newOccupancy.findOneAndUpdate({"_id":locationID}, floor)
   
-  metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_occupied_table}/${num_of_vibration_sensor}`})
+  metaData = JSON.stringify({"tables":floor, "occupencyRatio":`${num_of_vibration_sensor - num_of_occupied_table}/${num_of_vibration_sensor}`})
   device.publish(`bumGoWhere/frontend/update/${floor["_id"]}`, payload = metaData, QoS=1)
   console.log("push data to frontend")
 
