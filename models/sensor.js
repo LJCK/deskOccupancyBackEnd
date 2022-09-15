@@ -14,11 +14,22 @@ const newOccupancySchema = new Schema({
     type: Number,
     required: true
   },
-  desks:{
-    type: Array,
-    required: true
-  },
-  numOfSensors:{
+  sensors:[
+    {
+      sensorID : {
+        type: String
+      },
+      status : {
+        type: String
+      }, 
+      sensorType : {
+        type: String
+      }, 
+      expiryTime: {
+        type: Number
+      }
+    }],
+  numOfVibrationSensors:{
     type: Number,
     required: true
   }, 

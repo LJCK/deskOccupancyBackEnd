@@ -1,3 +1,3 @@
 const moment = require("moment");
 
-console.log(moment({hour:13, minute:30}))
+console.log(moment.utc().local().add(2,'hours'))
