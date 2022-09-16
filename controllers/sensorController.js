@@ -190,27 +190,12 @@ const get_all_levels=async(req,res)=>{
   const location = req.query.location
   const floors = await newOccupancy.find({location: location}).sort({"level":1})
   res.send(floors)
-  // const location = req.query.location
-  // const floors = await newOccupancy.aggregate([
-  //   {
-  //     $project : {
-  //       _id:1, 
-  //       sensors : {
-  //           $filter : {
-  //             input: "$sensors", 
-  //             as: "e", 
-  //             cond: { 
-  //               $eq: ["$$e.sensorType", "vibration"]
-  //             }
-  //           } 
-  //       }
-  //     }
-  //   }
-  // ])
-  // res.send(floors)
 }
 
 const checkExpire = async()=>{
+  // checkExpire will change all expired sensors to unoccupied
+  // then update the number of occupied sensors based on the updated sensor array
+  // this is called by cron job
   await newOccupancy.updateMany(
     {},
     {
