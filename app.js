@@ -5,6 +5,7 @@ const bodyParser = require('body-parser')
 const sensorRoutes = require('./routes/sensorRoutes')
 const floorPlanRoutes = require('./routes/floorPlanRoutes')
 const sensorController = require('./controllers/sensorController')
+const userRoutes = require('./routes/userRoutes')
 const cron = require('node-cron');
 
 var cors = require('cors')
@@ -21,7 +22,7 @@ var corsOptions = {
 const dbURI = 'mongodb+srv://zhiheng:zhiheng@cluster0.s7nla.mongodb.net/?retryWrites=true&w=majority'
 // const dbURI = 'mongodb+srv://qinxiang:qinxiang@cluster0.ojjsesl.mongodb.net/?retryWrites=true&w=majority'
 mongoose.connect(dbURI, {useNewUrlParser: true, useUnifiedTopology: true }) //its an async task, returns something like a promise
-        .then(result => app.listen(PORT, () => console.log('connected to db, server started')))
+        .then(result => app.listen(PORT, () => console.log('connected to db, server started in port 3001')))
         .catch(err => console.log(err));
 
 app.use(express.static('public'));
@@ -36,6 +37,7 @@ app.get('/', (req,res)=>{
   })
 app.use('/sensor',sensorRoutes)
 app.use('/floorPlan',floorPlanRoutes)
+app.use('/user', userRoutes)
 
 cron.schedule('0 */5 8-19 * * *', () => {
   sensorController.checkExpire()
