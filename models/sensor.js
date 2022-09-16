@@ -3,21 +3,40 @@ const Schema = mongoose.Schema;
 
 const newOccupancySchema = new Schema({
   _id: { //need to find a way to replace auto generated id with this
-      type: String,
-      required: true
+    type: String,
+    required: true
   },
   location: {
-      type: String,
-      required: true
+    type: String,
+    required: true
   },
   level: {
-      type: Number,
-      required: true
+    type: Number,
+    required: true
   },
-  desks:{
-      type: Array,
-      required: true
-  } 
+  sensors:[
+    {
+      sensorID : {
+        type: String
+      },
+      status : {
+        type: String
+      }, 
+      sensorType : {
+        type: String
+      }, 
+      expiryTime: {
+        type: Number
+      }
+    }],
+  numOfVibrationSensors:{
+    type: Number,
+    required: true
+  }, 
+  occupiedSensors:{
+    type: Number,
+    required: true
+  }
 });
 
 const IoTDataSchema = new Schema(

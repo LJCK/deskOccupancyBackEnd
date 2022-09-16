@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose')
 const morgan = require('morgan')
 const bodyParser = require('body-parser')
-const deskRoutes = require('./routes/deskRoutes')
+const sensorRoutes = require('./routes/sensorRoutes')
 const floorPlanRoutes = require('./routes/floorPlanRoutes')
+const sensorController = require('./controllers/sensorController')
 const userRoutes = require('./routes/userRoutes')
+const cron = require('node-cron');
 
 var cors = require('cors')
 
@@ -33,8 +35,11 @@ app.use(cors(corsOptions))
 app.get('/', (req,res)=>{
     res.send("Welcome to backend");
   })
-
-// Routes
-app.use('/desk',deskRoutes)
+app.use('/sensor',sensorRoutes)
 app.use('/floorPlan',floorPlanRoutes)
 app.use('/user', userRoutes)
+
+cron.schedule('0 */5 8-19 * * *', () => {
+  sensorController.checkExpire()
+  console.log("cron job ran, all sensors and number of occupied sensors should be updated based on the expiry time")
+});
