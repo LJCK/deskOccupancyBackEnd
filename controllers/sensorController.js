@@ -188,23 +188,26 @@ const get_sensor_status = async(req,res)=>{
 
 const get_all_levels=async(req,res)=>{
   const location = req.query.location
-  const floors = await newOccupancy.aggregate([
-    {
-      $project : {
-        _id:1, 
-        sensors : {
-            $filter : {
-              input: "$sensors", 
-              as: "e", 
-              cond: { 
-                $eq: ["$$e.sensorType", "vibration"]
-              }
-            } 
-        }
-      }
-    }
-  ])
+  const floors = await newOccupancy.find({location: location}).sort({"level":1})
   res.send(floors)
+  // const location = req.query.location
+  // const floors = await newOccupancy.aggregate([
+  //   {
+  //     $project : {
+  //       _id:1, 
+  //       sensors : {
+  //           $filter : {
+  //             input: "$sensors", 
+  //             as: "e", 
+  //             cond: { 
+  //               $eq: ["$$e.sensorType", "vibration"]
+  //             }
+  //           } 
+  //       }
+  //     }
+  //   }
+  // ])
+  // res.send(floors)
 }
 
 const checkExpire = async()=>{
