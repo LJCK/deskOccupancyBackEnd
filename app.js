@@ -13,8 +13,6 @@ var cors = require('cors')
 const app = express();
 const PORT = process.env.port || 3001;
 
-
-
 var corsOptions = {
     origin: '*',
 }
