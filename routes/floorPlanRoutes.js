@@ -13,6 +13,7 @@ const upload = multer({ storage: storage });
 //require auth for all upload image
 // router.use(requireAuth)
 
+router.use(requireAuth)
 router.post("/uploadImage", upload.single("file"), floorPlanController.uploadFloorPlan);
 router.get('/getAllImages',floorPlanController.getAllFloorPlan)
 router.delete('/deleteImage', floorPlanController.deleteImage)

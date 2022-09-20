@@ -178,17 +178,19 @@ async function compareSensorTimeseries(sensorID, time){
 
 const get_sensor_status = async(req,res)=>{
   const query_level = req.query.level
-  const allSensors = await newOccupancy.findOne({_id:query_level})
-  if(allSensors){
+  try {
+    const allSensors = await newOccupancy.findOne({_id:query_level})
     res.status(200).send({sensors: allSensors})
-  }else{
-    res.status(404).send("No sensor record found in database")
+  } catch(error) {
+      res.status(404).send(error)
   }
+  
 }
 
 const get_all_levels=async(req,res)=>{
   const location = req.query.location
   const floors = await newOccupancy.find({location: location}).sort({"level":1})
+  console.log("this is all levels ", floors)
   res.send(floors)
 }
 
