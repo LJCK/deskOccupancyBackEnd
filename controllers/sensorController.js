@@ -6,10 +6,10 @@ dotenv.config()
 
 THRESHOLD_5_MINUTES = process.env.THRESHOLD_5_MINUTES
 THRESHOLD_60_MINUTES = process.env.THRESHOLD_60_MINUTES
-AWS_HOST_ID = process.env.AWS_HOST_ID
+IOTCORE_HOST_ID = process.env.IOTCORE_HOST_ID
 
 const device = awsIot.device({
-  host: AWS_HOST_ID,
+  host: IOTCORE_HOST_ID,
   port: 8883,
   keyPath: './certs/private.pem.key',
   certPath: './certs/certificate.pem.crt',
