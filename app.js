@@ -15,7 +15,6 @@ var cors = require('cors')
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-
 var corsOptions = {
     origin: '*',
 }
@@ -36,7 +35,7 @@ app.use(bodyParser.urlencoded({ extended: true })) // for parsing application
 app.use(cors(corsOptions))
 
 app.get('/', (req,res)=>{
-    res.send("Welcome to backend");
+    res.send("Welcome to backend, port number: ", PORT);
   })
 app.use('/sensor',sensorRoutes)
 app.use('/floorPlan',floorPlanRoutes)
