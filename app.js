@@ -5,12 +5,19 @@ const bodyParser = require('body-parser')
 const multer = require('multer');
 const {GridFsStorage} = require('multer-gridfs-storage');
 const Grid = require('gridfs-stream');
+const fs = require('fs');
 const methodOverride = require('method-override');
 const cron = require('node-cron');
 const dotenv = require("dotenv")
+const replacer = require("./replacer")
+const AdmZip = require("adm-zip");
+const cheerio = require('cheerio');
+const {NodeVM} = require('vm2');
+
 dotenv.config()
 
-var cors = require('cors')
+var cors = require('cors');
+const { assert } = require('console');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,8 +35,12 @@ const dbURI = process.env.MONGODBURL
 //         .catch(err => console.log(err));
 
 const conn = mongoose.createConnection(dbURI)
-let gfs;
+
+let gfs, gridfsBucket ;
 conn.once('open', () => {
+  gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+    bucketName: 'uploads'
+  });
   // Init stream
   gfs = Grid(conn.db, mongoose.mongo);  
   gfs.collection('uploads');
@@ -61,9 +72,25 @@ app.use(bodyParser.json()) // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })) // for parsing application
 app.use(cors(corsOptions))
 
-app.get('/', (req,res)=>{
-  gfs.files.find().toArray((err, files) => {
-    return res.json(files);
+
+app.get('/getFile', async(req,res)=>{
+  const file = await gfs.files.findOne({filename: req.query.filename})
+  gridfsBucket.openDownloadStream(file._id).pipe(fs.createWriteStream("./template.docx")).on("error", function(error){
+    console.log("error: ", error)
+  }).on('finish', function(){
+    let inputs = {
+      "one":"1. hello \n2. world",
+      "two":"this is second line",
+      "a":1.1,
+      "b":2,
+      "c":3,
+      "ifelse":true,
+      "test":true
+    }
+    replacer.generateDocx("./template.docx",inputs)
+
+    fs.unlinkSync("./template.docx")
+    res.send("done")
   })
 })
 
@@ -71,13 +98,9 @@ app.post('/upload',upload.single("file"),(req,res)=>{
   res.json({ file: req.file });
 })
 
+// app.delete('/delete', (req,res)=>{
+//   gfs.files.remove()
+// })
 
 
-// cron job reference 
-// * * * * * *
-// second (optional), minute, hour, day of month, month, day of week( 0 - 7, where 0 or 7 are sunday)
-// the design below means every 5 minuts from 8am to 7 pm on monday to friday will call checkExpire()
-// cron.schedule('*/5 8-19 * * 1-5', () => {
-//   sensorController.checkExpire()
-//   console.log("cron job ran, all sensors and number of occupied sensors should be updated based on the expiry time")
-// });
+// https://stackoverflow.com/questions/45046716/uploading-a-doc-file-directly-in-mongodb
