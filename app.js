@@ -40,12 +40,11 @@ app.get('/', (req,res)=>{
 app.use('/sensor',sensorRoutes)
 app.use('/floorPlan',floorPlanRoutes)
 app.use('/user', userRoutes)
-
 // cron job reference 
 // * * * * * *
 // second (optional), minute, hour, day of month, month, day of week( 0 - 7, where 0 or 7 are sunday)
 // the design below means every 5 minuts from 8am to 7 pm on monday to friday will call checkExpire()
-cron.schedule('*/5 8-19 * * 1-5', () => {
-  sensorController.checkExpire()
-  console.log("cron job ran, all sensors and number of occupied sensors should be updated based on the expiry time")
-});
+// cron.schedule('*/5 8-19 * * 1-5', () => {
+//   sensorController.checkExpire()
+//   console.log("cron job ran, all sensors and number of occupied sensors should be updated based on the expiry time")
+// });
